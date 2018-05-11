@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 from peewee import *
@@ -15,7 +16,7 @@ import cloudconvert
 translate = YandexTranslate('API KEY')
 
 # ключ vk api
-token_vk = "API KEY"
+token_vk = 'API KEY'
 
 # ключ для конвертации через api cloudconvert
 api = cloudconvert.Api('API KEY')  
@@ -39,7 +40,7 @@ my_translate = {
 	'человек':'demonym',
 	'джини':'gini',
 	'границы':'borders',
-	'имя':'nativeName',
+	'оригинал':'nativeName',
 	'страна':'nativeName',
 	'название':'nativeName',
 	'код':'numericCode',
@@ -80,16 +81,18 @@ def state0(message: Event):
 	if hello == 'привет':
 		text = 'Привет! Я справочник по странам . Напиши мне, например "Столица Франции" или "Население США" . Чтобы узнать полный список команд напиши "что ты умеешь" .'
 	elif hello == 'что ты умеешь' or hello == 'что ты умеешь?':
-		text = 'Как пользоваться ботом ? -> " команда страна" <- Например : Флаг США , Народ Аргентины и тд. Полный список команд : ' 
+		text = 'Как пользоваться ботом : \n"команда страна"\n\nНапример : Флаг США , Народ Аргентины и тд. \n\nПолный список команд : \n\n' 
 		for key in my_translate.keys():
-			text+= ' , ' + key
+			text+= key + ' , '
+		text = text[0:-2]
+		text+=' .'
 	else:
 		try:
 			a = text.split()
 			find_ru = a[0]
 			find_en = my_translate[find_ru.lower()]
 
-			print('----------------------------------------')
+			print('------------------------------------------------')
 			print('Что найти :',find_en)
 
 			# извините, здесь костыль из-за неправильного перевода YandexTranslate
@@ -103,9 +106,9 @@ def state0(message: Event):
 
 			print('Страна :',country)
 
-		#https://restcountries.eu/rest/v2/name/russia/?fields=name;capital;currencies  # пример запроса по отдельным полям
+		    #https://restcountries.eu/rest/v2/name/russia/?fields=name;capital;currencies  # пример запроса по отдельным полям
 
-			url = 'https://restcountries.eu/rest/v2/name/'+country+'/?fields='+find_en+';'
+			url = 'https://restcountries.eu/rest/v2/name/' + country + '/?fields=' + find_en + ';'
 			response = requests.get(url)
 			list = (response.json()[0])					   # получаем список
 			print(list)
@@ -117,43 +120,83 @@ def state0(message: Event):
 				otvet = perevod(otvet['name'],'en-ru')		# переводим
 				text = text + " - " + str(otvet)
 
-			if find_en == 'population':
+			elif find_en == 'numericCode' or find_en == 'nativeName':
+
 				otvet = list[find_en]
-				text = text + " - " + str(otvet) + ' человек'
+				text = text + " - " + str(otvet)
+
+			elif find_en == 'timezones' or find_en == 'borders':
+
+				otvet = list[find_en]
+				text = text + " - "
+
+				for i in otvet:
+					text+= i + ' , '
+				text = text[0:-2]
+				text+=' .'
+
+			elif find_en == 'population':
+				otvet = list[find_en]
+
+				source = "{:,d}"
+				otvet = source.format(otvet)   # форматирования для удобного чтения больших чисел
+				text = text + " - " + str(otvet)
+
+			elif find_en == 'area':
+
+				otvet = list[find_en]
+				source = "{:,d} км²"
+				otvet = source.format(int(otvet))   # форматирования для удобного чтения больших чисел
+				text = text + " - " + str(otvet)
+
+			elif find_en == 'topLevelDomain':
+				
+				otvet = list[find_en]
+				text = text + " - " + str(otvet[0])
 
 			elif find_en == 'flag':
-				url = str(list[find_en])
 
-				print(url)
-				img = urllib.request.urlopen(url).read()
-				out = open("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg", "wb")
-				out.write(img)
-				out.close()
+				path_to_jpg = 'C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/'+country+'.jpg'
+				path_to_svg = 'C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/'+country+'.svg'
 
-				print("скачали SVG картинку")
+				if os.path.exists(path_to_jpg):
+					print('Картинка уже есть')
+				else:
+					print('Файл не существует')
 
-				process = api.convert({
-					'inputformat': 'svg',
-					'outputformat': 'jpg',
-					'input': 'upload',
-					'file': open('C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg', 'rb'),
-					"converteroptions": {
-						"resize": "500x500",
-					}
-				})
-				process.wait() # wait until conversion finished
-				process.download("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg") # download output file
+					url = str(list[find_en])
+					print(url)
+					img = urllib.request.urlopen(url).read()
+					out = open(path_to_svg, "wb")   # скачиваем картинку
+					out.write(img)
+					out.close()
 
-				print("конвертировали SVG картинку в JPEG")
-				photo = upload.photo_messages(photos=r'C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg')[0]
+					print("скачали SVG картинку")
+
+					process = api.convert({
+						'inputformat': 'svg',  # исходный формат
+						'outputformat': 'jpg',  # формат в который нужно конвертировать 
+						'input': 'upload',
+						'file': open(path_to_svg, 'rb'),   # картинка для конвертации
+						"converteroptions": {
+							"resize": "500x500",   # обрезаем картинку до 500х500
+						}
+					})
+					process.wait() # wait until conversion finished
+					process.download(path_to_jpg) # download output file
+					os.remove(path_to_svg)  #delete svg file - удаляем svg фото после конвертации
+
+					print("конвертировали SVG картинку в JPEG")
+
+				photo = upload.photo_messages(photos=path_to_jpg)[0]
 
 			else:
 				otvet = perevod(list[find_en],'en-ru')        # переводим
-				otvet = text + " - " + str(otvet)
+				text = text + " - " + str(otvet)
 		except:
 
 			print("Ошибка!")
-			text = 'Что-то пошло не так...'
+			text = 'Такой команды нет ! Чтобы узнать список команд напиши : "что ты умеешь" '
 
 	try:
 		# отправляем сообщение
