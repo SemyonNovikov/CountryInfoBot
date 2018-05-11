@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2011
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "CountryInfoBot_VK", "CountryInfoBot_VK\CountryInfoBot_VK.pyproj", "{0F5408FC-8532-41E4-A9EC-39CA05B1F519}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0F5408FC-8532-41E4-A9EC-39CA05B1F519}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F5408FC-8532-41E4-A9EC-39CA05B1F519}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {938C6583-25EA-4FE5-85FF-E48554E161F4}
+	EndGlobalSection
+EndGlobal
