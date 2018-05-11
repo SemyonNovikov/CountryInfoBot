@@ -12,19 +12,19 @@ import urllib.request
 import cloudconvert
 
 # ключ YandexTranslate
-translate = YandexTranslate('key')
+translate = YandexTranslate('API KEY')
 
 # ключ vk api
-token_vk = "key"
+token_vk = "API KEY"
 
 # ключ для конвертации через api cloudconvert
-api = cloudconvert.Api('key')  
+api = cloudconvert.Api('API KEY')  
 
 # мой переводчик
 my_translate = {   
 	'столица':'capital',
-	'население':'population',
-	'домен':'topLevelDomain',
+	'население':'population', 
+	'домен':'topLevelDomain',  
 	'континент':'region',
 	'подконтинент':'subregion',
 	'регион':'subregion',
@@ -59,8 +59,8 @@ table = db.create_tables([User])
 vk_session = vk_api.VkApi(token=token_vk)
 vk = vk_session.get_api()
 
-upload = VkUpload(vk_session)  # Для загрузки изображений
-longpoll = VkLongPoll(vk_session) # инициализация лонгполлинга
+upload = VkUpload(vk_session)      # для загрузки изображений
+longpoll = VkLongPoll(vk_session)  # инициализация лонгполлинга
 
 def perevod(text,direction):  # text - что перевести , direction - направление перевода
 	try:
@@ -75,22 +75,24 @@ def perevod(text,direction):  # text - что перевести , direction - �
 
 def state0(message: Event):
 	text = message.text
-	text = text.lower()
-
-	if text == 'привет':
-		s = 'Привет! Я справочник по странам . Напиши мне, например "Столица Франции" или "Население США" . Чтобы узнать полный список команд напиши "что ты умеешь" .'
-	elif text == 'что ты умеешь' or text == 'что ты умеешь?':
-		s = 'ничего я лох'
+	hello = text.lower()
+	
+	if hello == 'привет':
+		text = 'Привет! Я справочник по странам . Напиши мне, например "Столица Франции" или "Население США" . Чтобы узнать полный список команд напиши "что ты умеешь" .'
+	elif hello == 'что ты умеешь' or hello == 'что ты умеешь?':
+		text = 'Как пользоваться ботом ? -> " команда страна" <- Например : Флаг США , Народ Аргентины и тд. Полный список команд : ' 
+		for key in my_translate.keys():
+			text+= ' , ' + key
 	else:
 		try:
 			a = text.split()
 			find_ru = a[0]
-			find_en = my_translate[find_ru]
+			find_en = my_translate[find_ru.lower()]
 
 			print('----------------------------------------')
 			print('Что найти :',find_en)
 
-			# извините, здесь костыль
+			# извините, здесь костыль из-за неправильного перевода YandexTranslate
 			if a[1] == "Того":  
 				country="Togo"
 			else:
@@ -100,69 +102,72 @@ def state0(message: Event):
 					country = perevod(a[1], 'en')
 
 			print('Страна :',country)
-		except:
-			print('Some errors ...')
 
 		#https://restcountries.eu/rest/v2/name/russia/?fields=name;capital;currencies  # пример запроса по отдельным полям
 
-		#try:
-		url = 'https://restcountries.eu/rest/v2/name/'+country+'/?fields='+find_en+';'
-		response = requests.get(url)
-		list = (response.json()[0])					   # получаем список
-		print(list)
+			url = 'https://restcountries.eu/rest/v2/name/'+country+'/?fields='+find_en+';'
+			response = requests.get(url)
+			list = (response.json()[0])					   # получаем список
+			print(list)
 
-		if find_en == "currencies":
-			dict = list[find_en]
-			otvet = dict[0]
-			print('Валюта :', otvet)
-			otvet = perevod(otvet['name'],'en-ru')		# переводим
-			send_message(message = text + " - " + str(otvet))
+			if find_en == 'currencies':
+				dict = list[find_en]
+				otvet = dict[0]
+				print('Валюта :', otvet)
+				otvet = perevod(otvet['name'],'en-ru')		# переводим
+				text = text + " - " + str(otvet)
 
-		elif find_en == 'flag':
-			url = str(list[find_en])
+			if find_en == 'population':
+				otvet = list[find_en]
+				text = text + " - " + str(otvet) + ' человек'
 
-			print(url)
-			img = urllib.request.urlopen(url).read()
-			out = open("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg", "wb")
-			out.write(img)
-			out.close()
+			elif find_en == 'flag':
+				url = str(list[find_en])
 
-			print("скачали SVG картинку")
+				print(url)
+				img = urllib.request.urlopen(url).read()
+				out = open("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg", "wb")
+				out.write(img)
+				out.close()
 
-			process = api.convert({
-				'inputformat': 'svg',
-				'outputformat': 'jpg',
-				'input': 'upload',
-				'file': open('C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg', 'rb'),
-				"converteroptions": {
-					"resize": "500x500",
-				}
-			})
-			process.wait() # wait until conversion finished
-			process.download("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg") # download output file
+				print("скачали SVG картинку")
 
-			print("конвертировали SVG картинку в JPEG")
-			photo = upload.photo_messages(photos=r'C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg')[0]
+				process = api.convert({
+					'inputformat': 'svg',
+					'outputformat': 'jpg',
+					'input': 'upload',
+					'file': open('C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/svg.svg', 'rb'),
+					"converteroptions": {
+						"resize": "500x500",
+					}
+				})
+				process.wait() # wait until conversion finished
+				process.download("C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg") # download output file
 
-		else:
-			otvet = perevod(list[find_en],'en-ru')        # переводим
-			text = text + " - " + str(otvet)
+				print("конвертировали SVG картинку в JPEG")
+				photo = upload.photo_messages(photos=r'C:/Main/Programming/PythonProjects/CountryInfoBot_VK/Photos/jpg.jpg')[0]
 
-		try:
-			# отправляем сообщение
-			vk.messages.send(
-			user_id = message.user_id,	    # кому
-			message = text.title(),				    # само сообщение хранится в переменной 'text'
-			attachment = 'photo{}_{}'.format(photo['owner_id'], photo['id'])
-			)
+			else:
+				otvet = perevod(list[find_en],'en-ru')        # переводим
+				otvet = text + " - " + str(otvet)
 		except:
-			# отправляем сообщение
-			vk.messages.send(
-			user_id = message.user_id,	    # кому
-			message = text.title()				    # само сообщение хранится в переменной 'text'
-			)
-		#except KeyError:
-		#s = "Ошибка !"
+
+			print("Ошибка!")
+			text = 'Что-то пошло не так...'
+
+	try:
+		# отправляем сообщение
+		vk.messages.send(
+		user_id = message.user_id,				 # кому
+		message = text,							 # сообщение хранится в переменной 'text'
+		attachment = 'photo{}_{}'.format(photo['owner_id'], photo['id'])
+		)
+	except:
+		# отправляем сообщение
+		vk.messages.send(
+		user_id = message.user_id,				# кому
+		message = text							# сообщение хранится в переменной 'text'
+		)
 
 # ожидаем события
 for event in longpoll.listen():
