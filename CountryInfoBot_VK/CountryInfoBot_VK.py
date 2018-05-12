@@ -1,3 +1,4 @@
+# VERSION BOT : 0.1.1 
 import os
 import json
 import requests
@@ -63,7 +64,7 @@ vk = vk_session.get_api()
 upload = VkUpload(vk_session)      # для загрузки изображений
 longpoll = VkLongPoll(vk_session)  # инициализация лонгполлинга
 
-def perevod(text,direction):  # text - что перевести , direction - направление перевода
+def translator(text,direction):  # text - что перевести , direction - направление перевода
 	try:
 		perevod = ('Translate:', translate.translate(text, direction))  # or just 'en'
 		perevod = (perevod[1])
@@ -100,24 +101,30 @@ def state0(message: Event):
 				country="Togo"
 			else:
 				try:
-					country = perevod(a[1]+' '+a[2], 'en')
+					country = translator(a[1]+' '+a[2], 'en')
 				except IndexError:
-					country = perevod(a[1], 'en')
+					country = translator(a[1], 'en')
 
 			print('Страна :',country)
 
-		    #https://restcountries.eu/rest/v2/name/russia/?fields=name;capital;currencies  # пример запроса по отдельным полям
+			#https://restcountries.eu/rest/v2/name/russia/?fields=name;capital;currencies  # пример запроса по отдельным полям
 
 			url = 'https://restcountries.eu/rest/v2/name/' + country + '/?fields=' + find_en + ';'
 			response = requests.get(url)
 			list = (response.json()[0])					   # получаем список
 			print(list)
 
-			if find_en == 'currencies':
+			if find_en == 'currencies' or find_en == 'languages':
+				otvet = ''
 				dict = list[find_en]
-				otvet = dict[0]
-				print('Валюта :', otvet)
-				otvet = perevod(otvet['name'],'en-ru')		# переводим
+				print(dict)
+				for l in dict:
+					print(l)
+					otvet += translator(l['name'],'en-ru') + ' , '
+				otvet = otvet[0:-2]
+				otvet+=' .'
+
+				#print('Валюта или язык :', otvet)
 				text = text + " - " + str(otvet)
 
 			elif find_en == 'numericCode' or find_en == 'nativeName':
@@ -191,7 +198,7 @@ def state0(message: Event):
 				photo = upload.photo_messages(photos=path_to_jpg)[0]
 
 			else:
-				otvet = perevod(list[find_en],'en-ru')        # переводим
+				otvet = translator(list[find_en],'en-ru')        # переводим
 				text = text + " - " + str(otvet)
 		except:
 
