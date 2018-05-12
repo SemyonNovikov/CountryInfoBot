@@ -41,7 +41,6 @@ my_translate = {
 	'человек':'demonym',
 	'джини':'gini',
 	'границы':'borders',
-	'оригинал':'nativeName',
 	'страна':'nativeName',
 	'название':'nativeName',
 	'код':'numericCode',
