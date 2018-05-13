@@ -1,4 +1,4 @@
-# BOT VERSION : 0.1.2
+# BOT VERSION : 1.0.0
 
 import os
 import json
