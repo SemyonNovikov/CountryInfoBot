@@ -1,0 +1,6 @@
+vk_api
+peewee
+yandex_translate
+cloudconvert
+requests
+Pillow
